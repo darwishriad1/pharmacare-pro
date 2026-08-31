@@ -1,0 +1,25 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Android / Capacitor
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/app/release/
+android/app/pharmacare.keystore
+android/keystore.properties
+android/capacitor-cordova-android-plugins/
+*.keystore
+*.jks
+
+# IDE
+.idea/
+.vscode/
+*.iml

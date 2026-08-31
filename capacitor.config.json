@@ -1,0 +1,14 @@
+{
+  "appId": "com.pharmacare.pro",
+  "appName": "PharmaCare Pro",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": true
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

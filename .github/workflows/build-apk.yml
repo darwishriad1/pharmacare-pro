@@ -1,0 +1,110 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      release_mode:
+        description: 'Release (signed) or Debug'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - release
+          - debug
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Install npm dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build web app
+        run: npm run build
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Make Gradlew executable
+        working-directory: android
+        run: chmod +x gradlew
+
+      - name: Decode Keystore (release)
+        if: github.event.inputs.release_mode != 'debug'
+        uses: timheuer/base64-to-file@v1
+        with:
+          fileName: 'android/app/pharmacare.keystore'
+          encodedString: ${{ secrets.KEYSTORE_BASE64 }}
+
+      - name: Decode keystore.properties
+        if: github.event.inputs.release_mode != 'debug'
+        uses: timheuer/base64-to-file@v1
+        with:
+          fileName: 'android/keystore.properties'
+          encodedString: ${{ secrets.KEYSTORE_PROPERTIES_BASE64 }}
+
+      - name: Build Release APK
+        if: github.event.inputs.release_mode != 'debug'
+        working-directory: android
+        run: |
+          if [ -f keystore.properties ]; then
+            ./gradlew assembleRelease
+          else
+            echo "::warning::keystore.properties not found, building unsigned release"
+            ./gradlew assembleRelease -Pandroid.injected.signing.enabled=false
+          fi
+
+      - name: Build Debug APK
+        if: github.event.inputs.release_mode == 'debug' || github.event_name == 'pull_request'
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Find APK
+        id: find_apk
+        run: |
+          APK=$(find android/app/build/outputs/apk -name "*.apk" | head -1)
+          if [ -z "$APK" ]; then
+            echo "No APK found!"
+            exit 1
+          fi
+          echo "apk_path=$APK" >> $GITHUB_OUTPUT
+          echo "Found APK: $APK"
+          ls -la "$APK"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pharmacare-pro-apk
+          path: ${{ steps.find_apk.outputs.apk_path }}
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Attach APK to Release (if tagged)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ steps.find_apk.outputs.apk_path }}
+          generate_release_notes: true
