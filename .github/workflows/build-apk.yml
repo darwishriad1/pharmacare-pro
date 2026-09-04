@@ -5,15 +5,6 @@ on:
     branches: [main, master]
     tags: ['v*']
   workflow_dispatch:
-    inputs:
-      release_mode:
-        description: 'Release (signed) or Debug'
-        required: true
-        default: 'release'
-        type: choice
-        options:
-          - release
-          - debug
 
 jobs:
   build:
@@ -52,33 +43,7 @@ jobs:
         working-directory: android
         run: chmod +x gradlew
 
-      - name: Decode Keystore (release)
-        if: github.event.inputs.release_mode != 'debug'
-        uses: timheuer/base64-to-file@v1
-        with:
-          fileName: 'android/app/pharmacare.keystore'
-          encodedString: ${{ secrets.KEYSTORE_BASE64 }}
-
-      - name: Decode keystore.properties
-        if: github.event.inputs.release_mode != 'debug'
-        uses: timheuer/base64-to-file@v1
-        with:
-          fileName: 'android/keystore.properties'
-          encodedString: ${{ secrets.KEYSTORE_PROPERTIES_BASE64 }}
-
-      - name: Build Release APK
-        if: github.event.inputs.release_mode != 'debug'
-        working-directory: android
-        run: |
-          if [ -f keystore.properties ]; then
-            ./gradlew assembleRelease
-          else
-            echo "::warning::keystore.properties not found, building unsigned release"
-            ./gradlew assembleRelease -Pandroid.injected.signing.enabled=false
-          fi
-
       - name: Build Debug APK
-        if: github.event.inputs.release_mode == 'debug' || github.event_name == 'pull_request'
         working-directory: android
         run: ./gradlew assembleDebug
 
