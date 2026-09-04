@@ -5,11 +5,11 @@ android {
     namespace = "com.pharmacare.pro"
     compileSdk = rootProject.ext.compileSdkVersion
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
     }
     kotlinOptions {
-        jvmTarget = '17'
+        jvmTarget = '21'
     }
     defaultConfig {
         applicationId "com.pharmacare.pro"
@@ -52,11 +52,11 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
-// try {
-//     def servicesJSON = file('google-services.json')
-//     if (servicesJSON.text) {
-//         apply plugin: 'com.google.gms.google-services'
-//     }
-// } catch(Exception e) {
-//     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
-// }
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}
